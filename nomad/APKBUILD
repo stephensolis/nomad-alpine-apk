@@ -1,0 +1,37 @@
+# Contributor: Matthias Neugebauer <mtneug@mailbox.org>
+# Contributor: omni <omni+alpine@hack.org>
+# Contributor: Dermot Bradley <dermot_bradley@yahoo.com>
+# Contributor: Stephen <stephsolis@gmail.com>
+# Maintainer: Stephen <stephsolis@gmail.com>
+pkgname=nomad
+pkgver=$PACKAGE_VERSION
+pkgrel=0
+pkgdesc="easy-to-use, flexible, and performant workload orchestrator"
+url="https://developer.hashicorp.com/nomad"
+arch="x86_64 aarch64"
+license="BUSL-1.1"
+depends="
+	cni-plugins
+	gcompat
+	"
+subpackages="
+	$pkgname-openrc
+	"
+options="net !strip !check"
+source="$pkgname-$pkgver.zip::https://releases.hashicorp.com/$pkgname/$pkgver/${pkgname}_${pkgver}_linux_$([[ "$CARCH" == "x86_64" ]] && echo "amd64" || echo "arm64").zip
+	nomad.initd
+	nomad.confd
+	server.hcl
+	"
+
+package() {
+	install -m755 -D "$srcdir"/"$pkgname".initd "$pkgdir"/etc/init.d/"$pkgname"
+	install -m644 -D "$srcdir"/"$pkgname".confd "$pkgdir"/etc/conf.d/"$pkgname"
+
+	install -m755 -d "$pkgdir"/etc/cni
+	install -m755 -d "$pkgdir"/usr/lib/"$pkgname"/plugins
+
+	install -m755 -o root -g root -D "$srcdir"/"$pkgname" "$pkgdir"/usr/sbin/"$pkgname"
+	install -m640 -o root -g root -D "$srcdir"/server.hcl "$pkgdir"/etc/nomad.d/server.hcl
+	install -m750 -o root -g root -d "$pkgdir"/var/lib/"$pkgname"
+}

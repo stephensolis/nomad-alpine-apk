@@ -1,0 +1,20 @@
+# Contributor: Stephen <stephsolis@gmail.com>
+# Maintainer: Stephen <stephsolis@gmail.com>
+pkgname=nomad-driver-podman
+pkgver=$PACKAGE_VERSION
+pkgrel=0
+pkgdesc="Podman task driver plugin for Nomad"
+url="https://developer.hashicorp.com/nomad/plugins/drivers/podman"
+arch="x86_64 aarch64"
+license="MPL-2.0"
+depends="
+	gcompat
+	nomad
+	podman
+	"
+options="net !strip !check"
+source="$pkgname-$pkgver.zip::https://releases.hashicorp.com/$pkgname/$pkgver/${pkgname}_${pkgver}_linux_$([[ "$CARCH" == "x86_64" ]] && echo "amd64" || echo "arm64").zip"
+
+package() {
+	install -m755 -o root -g root -D "$srcdir"/"$pkgname" "$pkgdir"/usr/lib/nomad/plugins/"$pkgname"
+}
