@@ -1,0 +1,69 @@
+name: Check versions
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  check-versions:
+    name: Check versions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check for updates
+        run: |
+          updated=false
+          commit_messages=""
+
+          check_package() {
+            local package="$1"
+            local current="$2"
+
+            latest=$(curl -s "https://releases.hashicorp.com/${package}/" \
+              | grep -oP "/${package}/\K[0-9]+\.[0-9]+\.[0-9]+" \
+              | grep -v -E "ent|rc|beta" \
+              | sort -V \
+              | tail -1)
+
+            if [ -z "$latest" ]; then
+              echo "Could not fetch latest version for ${package}"
+              return
+            fi
+
+            echo "${package}: current=${current} latest=${latest}"
+
+            if [ "$current" != "$latest" ]; then
+              sed -i "s/\(name: ${package}\)$/\1/" .github/workflows/build.yml
+              sed -i "/name: ${package}$/{n;s/version: .*/version: ${latest}/}" .github/workflows/build.yml
+              updated=true
+              commit_messages="${commit_messages}Update ${package} to ${latest}\n"
+            fi
+          }
+
+          nomad_version=$(grep -A1 'name: nomad$' .github/workflows/build.yml | grep version | awk '{print $2}')
+          podman_version=$(grep -A1 'name: nomad-driver-podman$' .github/workflows/build.yml | grep version | awk '{print $2}')
+
+          check_package "nomad" "$nomad_version"
+          check_package "nomad-driver-podman" "$podman_version"
+
+          if [ "$updated" = true ]; then
+            echo "UPDATED=true" >> "$GITHUB_ENV"
+            printf "%b" "$commit_messages" > /tmp/commit_message
+          else
+            echo "UPDATED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit updates
+        if: env.UPDATED == 'true'
+        run: |
+          git config user.name "Stephen"
+          git config user.email "stephen@nowhere"
+          git add .github/workflows/build.yml
+          git commit -F /tmp/commit_message
+          git push
