@@ -9,12 +9,12 @@ jobs:
   check-versions:
     name: Check versions
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.EDIT_WORKFLOW_TOKEN }}
 
       - name: Check for updates
         run: |
