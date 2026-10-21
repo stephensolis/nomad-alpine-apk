@@ -26,8 +26,7 @@ jobs:
             local current="$2"
 
             latest=$(curl -s "https://releases.hashicorp.com/${package}/" \
-              | grep -oP "/${package}/\K[0-9]+\.[0-9]+\.[0-9]+" \
-              | grep -v -E "ent|rc|beta" \
+              | grep -oP "/${package}/\K[0-9]+\.[0-9]+\.[0-9]+(?=/)" \
               | sort -V \
               | tail -1)
 
